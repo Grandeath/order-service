@@ -21,6 +21,8 @@ type (
 	Config struct {
 		ApiServer       ApiServer
 		TechnicalServer TechnicalServer
+		DB              DB
+		Kafka           Kafka
 		LogLevel        string `env:"LOG_LEVEL"`
 	}
 
@@ -34,6 +36,20 @@ type (
 		Port         string        `env:"TECHNICAL_PORT"`
 		ReadTimeout  time.Duration `env:"TECHNICAL_READ_TIMEOUT"`
 		WriteTimeout time.Duration `env:"TECHNICAL_WRITE_TIMEOUT"`
+	}
+
+	DB struct {
+		DSN             Secret        `env:"DB_DSN"`
+		MaxConns        int32         `env:"DB_MAX_CONNS"        envDefault:"10"`
+		ConnectTimeout  time.Duration `env:"DB_CONNECT_TIMEOUT"  envDefault:"5s"`
+	}
+
+	Kafka struct {
+		Enabled          bool   `env:"KAFKA_ENABLED"           envDefault:"false"`
+		URL              string `env:"KAFKA_URL"               envDefault:""`
+		Topic            string `env:"KAFKA_TOPIC"             envDefault:"order.events"`
+		Compression      bool   `env:"KAFKA_COMPRESSION"       envDefault:"true"`
+		MetricsNameSpace string `env:"KAFKA_METRICS_NAMESPACE" envDefault:"order_events"`
 	}
 )
 

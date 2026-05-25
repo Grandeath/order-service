@@ -7,53 +7,63 @@ import (
 	"net/http/pprof"
 	"time"
 
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-const defaultTimeout = 15 * time.Second
-
-type TechConfig struct {
+type Config struct {
 	Port         string
 	ReadTimeout  time.Duration
 	WriteTimeout time.Duration
 }
 
-func TechnicalEndpoints() []Endpoint {
-	endpoints := []Endpoint{
+func TechnicalEndpoints() []*Endpoint {
+	endpoints := []*Endpoint{
 		{
+			Method:  http.MethodGet,
 			Path:    "/ping",
 			Handler: ping,
 		},
 		{
+			Method:  http.MethodGet,
 			Path:    "/debug/pprof/",
 			Handler: pprof.Index,
 		},
 		{
+			Method:  http.MethodGet,
 			Path:    "/debug/pprof/cmdline",
 			Handler: pprof.Cmdline,
 		},
 		{
+			Method:  http.MethodGet,
 			Path:    "/debug/pprof/profile",
 			Handler: pprof.Profile,
 		},
 		{
+			Method:  http.MethodGet,
 			Path:    "/debug/pprof/trace",
 			Handler: pprof.Trace,
 		},
 		{
+			Method:  http.MethodGet,
 			Path:    "/metrics",
 			Handler: promhttp.Handler().ServeHTTP,
+		},
+		{
+			Method:  http.MethodGet,
+			Path:    "/version",
+			Handler: appVersion,
 		},
 	}
 
 	return endpoints
 }
 
-func ping(w http.ResponseWriter, _ *http.Request) {
-	_, _ = w.Write([]byte("pong"))
+func TechMiddlewares() []func(http.Handler) http.Handler {
+	return []func(http.Handler) http.Handler{middleware.NoCache}
 }
 
-func index(endpoints []Endpoint) func(w http.ResponseWriter, r *http.Request) {
+func index(endpoints []*Endpoint) http.HandlerFunc {
 	var tmpl = `<!DOCTYPE html>
 	<html lang="en">
 	<head>
