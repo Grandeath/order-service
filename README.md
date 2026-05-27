@@ -51,6 +51,30 @@ CONFIG_NAME=.env go run .
 Schemat bazy (`orders`, `idempotency_keys`) aplikuje się automatycznie przy
 starcie przez `db.Migrate` (`CREATE TABLE IF NOT EXISTS`).
 
+## Uwierzytelnianie (AWS Cognito)
+
+Logowanie odbywa się przez Cognito User Pools — serwis weryfikuje wystawiane
+przez nie tokeny JWT (`lestrrat-go/jwx`). Włączenie:
+
+```env
+COGNITO_ENABLED=true
+COGNITO_REGION=eu-central-1
+COGNITO_USER_POOL_ID=eu-central-1_xxxxxxxx
+COGNITO_APP_CLIENT_ID=xxxxxxxxxxxxxxxxxxxxxxxxxx   # opcjonalne
+```
+
+Sprawdzane są:
+
+- podpis (klucze pobierane z `https://cognito-idp.<region>.amazonaws.com/<userPoolId>/.well-known/jwks.json` i cache'owane z refreshem 15 min – 24 h),
+- `iss` (oczekiwany dokładnie issuer Cognito user pool),
+- `exp` / `iat` (z 30 s zegarowej tolerancji),
+- `token_use` — `access` albo `id`,
+- `aud` (dla id token) lub `client_id` (dla access token), gdy ustawione `COGNITO_APP_CLIENT_ID`.
+
+Klient wysyła nagłówek `Authorization: Bearer <jwt>`. Brak / niepoprawny token
+to `401 Unauthorized` z `WWW-Authenticate: Bearer`. Token jest dostępny w
+handlerach przez `auth.TokenFromContext(ctx)`, a `sub` przez `auth.SubjectFromContext(ctx)`.
+
 ## Endpointy
 
 | Metoda | Ścieżka                      | Opis                                        |

@@ -37,8 +37,15 @@ func (h *Handler) Endpoints() []*server.Endpoint {
 	}
 }
 
-func (h *Handler) Middlewares() []func(http.Handler) http.Handler {
-	return []func(http.Handler) http.Handler{RequestID, AccessLog, Recovery}
+// Middlewares returns the chain wrapping every order route. Extras are slotted
+// between AccessLog and Recovery, so the access log captures every response
+// (including 401s emitted by auth middleware) but Recovery still catches panics
+// inside handlers and the extras themselves.
+func (h *Handler) Middlewares(extras ...func(http.Handler) http.Handler) []func(http.Handler) http.Handler {
+	mws := []func(http.Handler) http.Handler{RequestID, AccessLog}
+	mws = append(mws, extras...)
+	mws = append(mws, Recovery)
+	return mws
 }
 
 func (h *Handler) create(w http.ResponseWriter, r *http.Request) {

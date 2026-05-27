@@ -23,6 +23,7 @@ type (
 		TechnicalServer TechnicalServer
 		DB              DB
 		Kafka           Kafka
+		Cognito         Cognito
 		LogLevel        string `env:"LOG_LEVEL"`
 	}
 
@@ -50,6 +51,13 @@ type (
 		Topic            string `env:"KAFKA_TOPIC"             envDefault:"order.events"`
 		Compression      bool   `env:"KAFKA_COMPRESSION"       envDefault:"true"`
 		MetricsNameSpace string `env:"KAFKA_METRICS_NAMESPACE" envDefault:"order_events"`
+	}
+
+	Cognito struct {
+		Enabled     bool   `env:"COGNITO_ENABLED"       envDefault:"false"`
+		Region      string `env:"COGNITO_REGION"        envDefault:""`
+		UserPoolID  string `env:"COGNITO_USER_POOL_ID"  envDefault:""`
+		AppClientID string `env:"COGNITO_APP_CLIENT_ID" envDefault:""`
 	}
 )
 

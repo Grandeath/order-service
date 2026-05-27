@@ -4,9 +4,11 @@ import (
 	"context"
 	"log"
 	"log/slog"
+	"net/http"
 	"os/signal"
 	"syscall"
 
+	"github.com/Grandeath/order-service/internal/auth"
 	"github.com/Grandeath/order-service/internal/config"
 	"github.com/Grandeath/order-service/internal/db"
 	"github.com/Grandeath/order-service/internal/metrics"
@@ -76,13 +78,20 @@ func runBackgroundWorkers(ctx context.Context, cfg *config.Config) error {
 	svc := service.New(repo, service.WithPublisher(events.NewKafkaPublisher(notifier)))
 	apiHandler := api.NewHandler(svc)
 
+	authMW, err := buildAuthMiddleware(ctx, cfg)
+	if err != nil {
+		return err
+	}
+
+	apiMiddlewares := apiHandler.Middlewares(authMW...)
+
 	workers, ctx := errgroup.WithContext(ctx)
 
 	workers.Go(server.Worker(ctx, &server.Config{
 		Port:         cfg.ApiServer.Port,
 		ReadTimeout:  cfg.ApiServer.ReadTimeout,
 		WriteTimeout: cfg.ApiServer.WriteTimeout,
-	}, apiHandler.Endpoints(), apiHandler.Middlewares()))
+	}, apiHandler.Endpoints(), apiMiddlewares))
 
 	workers.Go(server.Worker(ctx, &server.Config{
 		Port:         cfg.TechnicalServer.Port,
@@ -91,4 +100,24 @@ func runBackgroundWorkers(ctx context.Context, cfg *config.Config) error {
 	}, server.TechnicalEndpoints(), server.TechMiddlewares()))
 
 	return workers.Wait()
+}
+
+// buildAuthMiddleware returns the list of auth middlewares to splice into the
+// API chain. Empty when Cognito is disabled — Handler.Middlewares handles the
+// zero-length case correctly.
+func buildAuthMiddleware(ctx context.Context, cfg *config.Config) ([]func(http.Handler) http.Handler, error) {
+	if !cfg.Cognito.Enabled {
+		return nil, nil
+	}
+
+	verifier, err := auth.NewCognitoVerifier(ctx, auth.CognitoConfig{
+		Region:      cfg.Cognito.Region,
+		UserPoolID:  cfg.Cognito.UserPoolID,
+		AppClientID: cfg.Cognito.AppClientID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	slog.Info("cognito auth enabled", "userPoolId", cfg.Cognito.UserPoolID, "region", cfg.Cognito.Region)
+	return []func(http.Handler) http.Handler{auth.Middleware(verifier)}, nil
 }

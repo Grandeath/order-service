@@ -1,0 +1,88 @@
+version: "2"
+linters:
+  default: none
+  enable:
+    - asasalint
+    - asciicheck
+    - copyloopvar
+    - dogsled
+    - errcheck
+    - funlen
+    - gochecknoinits
+    - goconst
+    - gocyclo
+    - goprintffuncname
+    - gosec
+    - govet
+    - ineffassign
+    - lll
+    - modernize
+    - nakedret
+    - noctx
+    - perfsprint
+    - sqlclosecheck
+    - staticcheck
+    - testifylint
+    - unconvert
+    - unparam
+    - unused
+    - whitespace
+  settings:
+    dupl:
+      threshold: 100
+    funlen:
+      lines: 120
+      statements: 65
+    goconst:
+      min-len: 3
+      min-occurrences: 7
+      ignore-tests: true
+    gocyclo:
+      min-complexity: 17
+    gosec:
+      excludes:
+        - G115
+        - G117
+        - G124
+        - G404
+        - G704
+        - G705
+    lll:
+      line-length: 140
+    misspell:
+      locale: US
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - funlen
+          - lll
+          - goconst
+        path: _test\.go
+      - path: (.+)\.go$
+        text: ^.+ - .+ always receives .+$
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - goimports
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
