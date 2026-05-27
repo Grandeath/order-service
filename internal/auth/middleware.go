@@ -21,8 +21,6 @@ type ctxKey string
 
 const tokenCtxKey ctxKey = "jwt-token"
 
-// Middleware enforces Bearer auth. On success the parsed token is attached to
-// the request context; handlers retrieve it via TokenFromContext.
 func Middleware(v Verifier) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -36,7 +34,13 @@ func Middleware(v Verifier) func(http.Handler) http.Handler {
 				writeUnauthorized(w, err)
 				return
 			}
+			sub, ok := tok.Subject()
+			if !ok || sub == "" {
+				writeUnauthorized(w, errors.New("token has no subject"))
+				return
+			}
 			ctx := context.WithValue(r.Context(), tokenCtxKey, tok)
+			ctx = withCustomerID(ctx, sub)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
@@ -45,16 +49,6 @@ func Middleware(v Verifier) func(http.Handler) http.Handler {
 func TokenFromContext(ctx context.Context) (jwt.Token, bool) {
 	t, ok := ctx.Value(tokenCtxKey).(jwt.Token)
 	return t, ok
-}
-
-// SubjectFromContext is a convenience for handlers that just need the user id.
-func SubjectFromContext(ctx context.Context) (string, bool) {
-	tok, ok := TokenFromContext(ctx)
-	if !ok {
-		return "", false
-	}
-	sub, ok := tok.Subject()
-	return sub, ok
 }
 
 func bearerToken(r *http.Request) (string, error) {

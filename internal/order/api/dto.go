@@ -8,7 +8,6 @@ import (
 )
 
 type CreateOrderRequest struct {
-	CustomerID      string            `json:"customerId"`
 	Currency        string            `json:"currency"`
 	Items           []CreateOrderItem `json:"items"`
 	DeliveryAddress domain.Address    `json:"deliveryAddress"`

@@ -107,7 +107,8 @@ func runBackgroundWorkers(ctx context.Context, cfg *config.Config) error {
 // zero-length case correctly.
 func buildAuthMiddleware(ctx context.Context, cfg *config.Config) ([]func(http.Handler) http.Handler, error) {
 	if !cfg.Cognito.Enabled {
-		return nil, nil
+		slog.Warn("cognito auth disabled — customer id is read from request params (dev mode only)")
+		return []func(http.Handler) http.Handler{auth.DevCustomerMiddleware()}, nil
 	}
 
 	verifier, err := auth.NewCognitoVerifier(ctx, auth.CognitoConfig{

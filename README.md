@@ -86,14 +86,23 @@ handlerach przez `auth.TokenFromContext(ctx)`, a `sub` przez `auth.SubjectFromCo
 | POST   | `/api/v1/orders/{id}/cancel` | Anulowanie zamówienia                       |
 | DELETE | `/api/v1/orders/{id}`        | Usunięcie (admin)                           |
 
-### Przykład: utworzenie zamówienia
+### Identyfikator klienta
+
+`customerId` **nie** jest częścią ciała żądania — ustala go warstwa auth w jednym
+miejscu (middleware):
+
+- `COGNITO_ENABLED=true` → z claimu `sub` zweryfikowanego tokenu JWT,
+- `COGNITO_ENABLED=false` (dev) → z parametru `?customerId=` (lub nagłówka `X-Customer-Id`).
+
+Handlery czytają go wyłącznie z kontekstu (`auth.CustomerIDFromContext`).
+
+### Przykład: utworzenie zamówienia (tryb dev, bez Cognito)
 
 ```bash
-curl -X POST http://localhost:8080/api/v1/orders \
+curl -X POST 'http://localhost:8080/api/v1/orders?customerId=cust-1' \
   -H 'Content-Type: application/json' \
   -H 'Idempotency-Key: 8a3f-...' \
   -d '{
-    "customerId": "cust-1",
     "currency": "PLN",
     "items": [
       {"productId":"p1","productName":"Książka","quantity":2,"unitPrice":"39.90"}
@@ -106,6 +115,9 @@ curl -X POST http://localhost:8080/api/v1/orders \
     }
   }'
 ```
+
+Z włączonym Cognito `customerId` z query jest ignorowany — liczy się `sub` z
+`Authorization: Bearer <jwt>`.
 
 ### Przykład: zmiana statusu
 

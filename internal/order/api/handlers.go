@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/Grandeath/order-service/internal/auth"
 	"github.com/Grandeath/order-service/internal/order/domain"
 	"github.com/Grandeath/order-service/internal/order/service"
 	"github.com/Grandeath/order-service/internal/server"
@@ -65,9 +66,11 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
+	customerID, _ := auth.CustomerIDFromContext(r.Context())
+
 	order, err := h.svc.Create(r.Context(), service.CreateInput{
 		IdempotencyKey:  r.Header.Get("Idempotency-Key"),
-		CustomerID:      req.CustomerID,
+		CustomerID:      customerID,
 		Currency:        req.Currency,
 		Items:           items,
 		DeliveryAddress: req.DeliveryAddress,
@@ -85,7 +88,7 @@ func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	limit, _ := strconv.Atoi(q.Get("limit"))
 	offset, _ := strconv.Atoi(q.Get("offset"))
-	customerID := q.Get("customerId")
+	customerID, _ := auth.CustomerIDFromContext(r.Context())
 
 	orders, err := h.svc.List(r.Context(), customerID, limit, offset)
 	if err != nil {
